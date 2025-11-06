@@ -1,3 +1,5 @@
+# ARQUIVO ATUALIZADO: webcam_detector.py
+
 import cv2
 import numpy as np
 import os
@@ -8,7 +10,10 @@ WEIGHTS_PATH = os.path.join(MODEL_DIR, "yolov3-tiny.weights")
 CONFIG_PATH = os.path.join(MODEL_DIR, "yolov3-tiny.cfg")
 NAMES_PATH = os.path.join(MODEL_DIR, "coco.names")
 
-CLASSE_ALVO = "cell phone"
+# --- ALTERAÇÃO AQUI ---
+# Agora procuramos por ambas as classes
+CLASSES_ALVO = ["cell phone", "person"] 
+# --------------------
 
 CONF_THRESHOLD = 0.3 
 NMS_THRESHOLD = 0.4  
@@ -17,6 +22,7 @@ NMS_THRESHOLD = 0.4
 if not all(os.path.exists(p) for p in [WEIGHTS_PATH, CONFIG_PATH, NAMES_PATH]):
     print("Erro: Arquivos do modelo YOLO não encontrados na pasta 'yolo_model'.")
     print("Por favor, baixe 'yolov3-tiny.weights', 'yolov3-tiny.cfg' e 'coco.names'.")
+    print(f"Caminho esperado: {os.path.abspath(MODEL_DIR)}")
     exit()
 
 try:
@@ -36,9 +42,15 @@ except cv2.error as e:
     exit()
 
 layer_names = net.getLayerNames()
-output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers().flatten()]
+try:
+    # Versões mais novas do OpenCV
+    output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
+except TypeError:
+    # Versões mais antigas
+    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-print(f"Modelo YOLO carregado. Procurando por: '{CLASSE_ALVO}'")
+
+print(f"Modelo YOLO carregado. Procurando por: {CLASSES_ALVO}")
 
 # --- 3. Inicializar a Webcam ---
 cap = cv2.VideoCapture(0)
@@ -72,7 +84,10 @@ while True:
             class_id = np.argmax(scores)  
             confidence = scores[class_id] 
             
-            if confidence > CONF_THRESHOLD and classes[class_id] == CLASSE_ALVO:
+            # --- ALTERAÇÃO AQUI ---
+            # Verifica se a classe detectada está na nossa lista de alvos
+            if confidence > CONF_THRESHOLD and classes[class_id] in CLASSES_ALVO:
+            # --------------------
                 
                 box_coords = detection[0:4] * np.array([W, H, W, H])
                 (centerX, centerY, width, height) = box_coords.astype("int")
@@ -93,15 +108,20 @@ while True:
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
 
-            color = (0, 255, 0)
+            # Define a cor com base na classe
+            classe_detectada = classes[class_ids[i]]
+            color = (0, 255, 0) # Verde para pessoa (default)
+            if classe_detectada == "cell phone":
+                color = (0, 0, 255) # Vermelho para celular
+
             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
 
-            text = f"{classes[class_ids[i]]}: {confidences[i]:.2%}"
+            text = f"{classe_detectada}: {confidences[i]:.2%}"
             cv2.putText(frame, text, (x, y - 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
     # --- 8. Exibir o Frame ---
-    cv2.imshow("Detector de Celular (YOLO) - Pressione 'q' para sair", frame)
+    cv2.imshow("Detector de Celular e Pessoas (YOLO) - 'q' para sair", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
