@@ -20,7 +20,7 @@ COR_ROXA = (170, 0, 255)
 coletor_x = 0.0
 coletor2_x = 2.0
 coletor_y = -3.0
-coletor2_y = -3.0 
+coletor2_y = -3.0
 COLETOR_MEIA_LARGURA = 0.8
 COLETOR_MEIA_ALTURA = 0.8
 
@@ -34,7 +34,7 @@ LIMITE_FUNDO = -7.0
 COLETOR_LIMITE_TOPO = 0.0
 COLETOR_LIMITE_FUNDO = -6.0
 
-# Ajuste de HITBOX (ESTRELA)---
+# AJUSTE DE HITBOX (ESTRELA)
 ITEM_MEIA_LARGURA = 0.3
 ITEM_MEIA_ALTURA = 0.3
 
@@ -53,10 +53,11 @@ ESTADO_SELECIONAR_DIFICULDADE = "SELECIONAR_DIFICULDADE"
 ESTADO_JOGANDO = "JOGANDO"
 ESTADO_PAUSA = "PAUSA"
 ESTADO_FIM = "FIM_DE_JOGO"
+ESTADO_CONFIGURACOES = "CONFIGURACOES"
 
 ARQUIVO_SCORES = "highscores.json"
 
-# Fontes
+# Fonts
 fonte_placar = None
 fonte_menu = None
 fonte_titulo = None
@@ -241,7 +242,7 @@ class Item:
             self.velocidade = random.uniform(0.02, 0.06)
         elif nivel_dificuldade == "DIFÍCIL":
             self.velocidade = random.uniform(0.07, 0.13)
-        else: 
+        else: # MEDIO
             self.velocidade = random.uniform(0.04, 0.09)
         
         self.rotacao = random.uniform(0, 360)
@@ -329,7 +330,6 @@ def setup_lighting():
     glEnable(GL_LIGHT0) 
     glEnable(GL_LIGHT1) 
     
-    # LUZ 0 (Sol/Ambiente)
     ambient_light = [0.2, 0.2, 0.2, 1.0] 
     diffuse_light = [0.6, 0.6, 0.6, 1.0] 
     specular_light = [0.8, 0.8, 0.8, 1.0]
@@ -337,7 +337,6 @@ def setup_lighting():
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light)
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
 
-    # LUZ 1 (Lanterna)
     light1_ambient = [0.0, 0.0, 0.0, 1.0]
     light1_diffuse = [1.0, 1.0, 1.0, 1.0] 
     light1_specular = [1.0, 1.0, 1.0, 1.0]
@@ -348,7 +347,6 @@ def setup_lighting():
     glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0) 
     glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0) 
     
-    # Materiais
     mat_diffuse = [1.0, 1.0, 1.0, 1.0]
     mat_specular = [1.0, 1.0, 1.0, 1.0]
     mat_shininess = 50
@@ -491,6 +489,7 @@ def main():
     vidas = 0
     lista_itens = []
     tempo_inicio = pygame.time.get_ticks()
+    tempo_atual_seg = 0 
 
     game_state = ESTADO_MENU
     modo_de_jogo = None
@@ -504,18 +503,17 @@ def main():
         f"Tempo ({OBJETIVO_TEMPO_LIMITE}s)",
         f"Encher ({OBJETIVO_ENCHER_PONTOS} pts)",
         "Sobrevivência (Vidas)",
-        "Zerar (Não negative!)",
-        "Disputa (2P)"
+        "Zerar (Tempo)",
+        "Disputa (2P)",
+        "Configurações"
     ]
-    botao_modes = ["TEMPO", "ENCHER", "VIDAS", "ZERAR", "DISPUTA"]
+    botao_modes = ["TEMPO", "ENCHER", "VIDAS", "ZERAR", "DISPUTA", "CONFIGURACOES"]
 
-    # Variáveis de pausa
+    # Variáveis de pousa
     tempo_pausa_inicio = 0
-    
     btn_w_pausa = int(LARGURA_TELA * 0.40)
     btn_h_pausa = int(ALTURA_TELA * 0.085)
     espaco_pausa = int(ALTURA_TELA * 0.03)
-    
     botao_pausa_voltar_rect = pygame.Rect(
         (LARGURA_TELA / 2) - (btn_w_pausa / 2),
         (ALTURA_TELA / 2) - (btn_h_pausa + espaco_pausa / 2),
@@ -527,12 +525,11 @@ def main():
         btn_w_pausa, btn_h_pausa
     )
 
-    # Variáveis menu (DIFICULDADE)
+    # Variáveis menu dificuldade
     btn_w_dif = int(LARGURA_TELA * 0.40)
     btn_h_dif = int(ALTURA_TELA * 0.085)
     espaco_dif = int(ALTURA_TELA * 0.03)
     base_y_dif = ALTURA_TELA * 0.4
-    
     botao_dif_facil_rect = pygame.Rect(
         (LARGURA_TELA / 2) - (btn_w_dif / 2),
         base_y_dif,
@@ -547,6 +544,15 @@ def main():
         (LARGURA_TELA / 2) - (btn_w_dif / 2),
         base_y_dif + 2 * (btn_h_dif + espaco_dif),
         btn_w_dif, btn_h_dif
+    )
+
+    # VARIAVEIS MENU CONFIGURACOES
+    btn_w_config = int(LARGURA_TELA * 0.30) 
+    btn_h_config = int(ALTURA_TELA * 0.075) 
+    botao_config_voltar_rect = pygame.Rect(
+        (LARGURA_TELA / 2) - (btn_w_config / 2), 
+        ALTURA_TELA * 0.88, 
+        btn_w_config, btn_h_config 
     )
 
     while running:
@@ -566,6 +572,8 @@ def main():
                         game_state = ESTADO_JOGANDO
                         tempo_que_ficou_pausado = pygame.time.get_ticks() - tempo_pausa_inicio
                         tempo_inicio += tempo_que_ficou_pausado
+                    elif game_state == ESTADO_CONFIGURACOES: 
+                        game_state = ESTADO_MENU
             
             if game_state == ESTADO_PAUSA:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -590,6 +598,11 @@ def main():
                         nivel_dificuldade = "DIFICIL"
                         game_state = ESTADO_JOGANDO
                         pontos, lista_itens, tempo_inicio, coletor_x, coletor2_x, pontos_p2, coletor_y, coletor2_y, vidas = resetar_jogo()
+
+            elif game_state == ESTADO_CONFIGURACOES: 
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if botao_config_voltar_rect.collidepoint(mouse_pos):
+                        game_state = ESTADO_MENU
 
             elif game_state == ESTADO_JOGANDO:
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -621,10 +634,10 @@ def main():
             buffer.blit(titulo_img, (int(LARGURA_TELA * 0.05), titulo_y))
 
             btn_w = int(LARGURA_TELA * 0.40)
-            btn_h = int(ALTURA_TELA * 0.075) 
-            espaco = int(ALTURA_TELA * 0.02) 
+            btn_h = int(ALTURA_TELA * 0.07) 
+            espaco = int(ALTURA_TELA * 0.015)
             base_x = int(LARGURA_TELA * 0.05)
-            base_y = int(ALTURA_TELA * 0.30)
+            base_y = int(ALTURA_TELA * 0.25) 
 
             botoes_rects = []
             for i in range(len(botao_labels)):
@@ -636,20 +649,21 @@ def main():
                 draw_botao(buffer, r, botao_labels[i], hovered, fonte_menu)
 
             score_tempo = high_scores["TEMPO"][0] if high_scores["TEMPO"] else 0
-            score_zerar = high_scores["ZERAR"][0] if high_scores["ZERAR"] else 0
             score_encher = high_scores["ENCHER"][0] if high_scores["ENCHER"] else 0
-            score_disputa = high_scores["DISPUTA"][0] if high_scores["DISPUTA"] else 0
             score_vidas = high_scores["VIDAS"][0] if high_scores["VIDAS"] else 0
+            score_zerar = high_scores["ZERAR"][0] if high_scores["ZERAR"] else 0
+            score_disputa = high_scores["DISPUTA"][0] if high_scores["DISPUTA"] else 0
 
             sx = int(LARGURA_TELA * 0.62)
-            sy = int(ALTURA_TELA * 0.35) 
+            sy = int(ALTURA_TELA * 0.25) 
+            
             lines = [
                 ("Melhores Pontuações:", fonte_menu),
-                (f"Tempo: {score_tempo}", fonte_scores),
-                (f"Encher: {score_encher}", fonte_scores),
-                (f"Vidas: {score_vidas}", fonte_scores),
-                (f"Zerar: {score_zerar}", fonte_scores),
-                (f"Disputa: {score_disputa}", fonte_scores)
+                (f"Tempo: {score_tempo} pts", fonte_scores),
+                (f"Encher: {score_encher} pts", fonte_scores),
+                (f"Vidas: {score_vidas} pts", fonte_scores),
+                (f"Zerar: {score_zerar}s", fonte_scores), 
+                (f"Disputa: {score_disputa} pts", fonte_scores)
             ]
             offset = 0
             for texto, fnt in lines:
@@ -669,13 +683,15 @@ def main():
                             nivel_dificuldade = "MEDIO" 
                             game_state = ESTADO_JOGANDO
                             pontos, lista_itens, tempo_inicio, coletor_x, coletor2_x, pontos_p2, coletor_y, coletor2_y, vidas = resetar_jogo()
-                        else:
+                        elif modo_de_jogo == "CONFIGURACOES":
+                            game_state = ESTADO_CONFIGURACOES
+                        else: 
                             game_state = ESTADO_SELECIONAR_DIFICULDADE
                         break
             
             unset_ortho_mode()
 
-        # Menu de dificuldade
+        # MENU DE DIFICULDADE
         elif game_state == ESTADO_SELECIONAR_DIFICULDADE:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             set_ortho_mode(LARGURA_TELA, ALTURA_TELA)
@@ -705,8 +721,73 @@ def main():
             glDrawPixels(LARGURA_TELA, ALTURA_TELA, GL_RGBA, GL_UNSIGNED_BYTE, final)
             
             unset_ortho_mode()
+            
+        # MENU DE CONFIGURAÇÕES
+        elif game_state == ESTADO_CONFIGURACOES:
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            set_ortho_mode(LARGURA_TELA, ALTURA_TELA)
 
-        # Fim de jogo
+            desenhar_fundo_menu_2d(texture_menu_fundo, LARGURA_TELA, ALTURA_TELA)
+            
+            buffer = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
+            buffer.fill((0, 0, 0, 180)) 
+
+            titulo_img = fonte_titulo.render("AJUDA", True, (255, 255, 255))
+            buffer.blit(titulo_img, ((LARGURA_TELA / 2) - (titulo_img.get_width() / 2), 20))
+
+            # LAYOUT DE COLUNA ÚNICA
+            col_x = 50 
+            col_y = 100
+            
+            # Seção CONTROLES
+            desenhar_texto("CONTROLES", fonte_menu, col_x, col_y, (255, 255, 255, 255))
+            col_y += 40
+            
+            desenhar_texto("Jogador 1 (P1): Mover: W, A, S, D", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 30
+            
+            desenhar_texto("Jogador 2 (P2): Mover: Setas Direcionais", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 30
+
+            desenhar_texto("Geral: Camera: Mouse Arrastando", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 30 
+            
+            desenhar_texto("Zoom: Scroll do Mouse", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            
+            desenhar_texto("Pausa: ESC", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            
+            # Seção MODOS DE JOGO 
+            col_y += 50 
+            desenhar_texto("MODOS DE JOGO", fonte_menu, col_x, col_y, (255, 255, 255, 255))
+            col_y += 40
+
+            desenhar_texto("Tempo: Colete o maximo de pontos em 60s.", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 30
+            
+            desenhar_texto("Encher: Atinja a meta de 300 pontos.", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 30
+            
+            desenhar_texto("Sobrevivência: Voce tem 3 vidas. Nao deixe cair!", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 30
+
+            desenhar_texto("Zerar (Tempo): Comece com 0. Se negativar, perde.", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            col_y += 25 
+            desenhar_texto("  Pontuacao e o tempo sobrevivido.", fonte_scores, col_x + 15, col_y, (255, 255, 255, 255)) 
+            col_y += 30 
+            
+            desenhar_texto("Disputa: Quem faz mais pontos em 60s vence.", fonte_scores, col_x, col_y, (255, 255, 255, 255))
+            
+            # Botao Voltar
+            hover_voltar = botao_config_voltar_rect.collidepoint(mouse_pos)
+            draw_botao(buffer, botao_config_voltar_rect, "Voltar ao Menu", hover_voltar, fonte_menu)
+
+            final = pygame.image.tostring(buffer, "RGBA", True)
+            glWindowPos2d(0, 0)
+            glDrawPixels(LARGURA_TELA, ALTURA_TELA, GL_RGBA, GL_UNSIGNED_BYTE, final)
+            
+            unset_ortho_mode()
+
+        # FIM DE JOGO 
         elif game_state == ESTADO_FIM:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
             set_ortho_mode(LARGURA_TELA, ALTURA_TELA)
@@ -721,8 +802,13 @@ def main():
                 desenhar_texto(f"P2 Pontos: {pontos_p2}", fonte_placar, LARGURA_TELA // 2, int(ALTURA_TELA * 0.42),
                                align="center")
             else:
-                desenhar_texto(f"PONTUAÇÃO FINAL: {pontos}", fonte_placar, LARGURA_TELA // 2,
-                               int(ALTURA_TELA * 0.5), align="center")
+                if modo_de_jogo == "ZERAR":
+                    score_final = int(tempo_atual_seg)
+                    desenhar_texto(f"TEMPO FINAL: {score_final}s", fonte_placar, LARGURA_TELA // 2,
+                                   int(ALTURA_TELA * 0.5), align="center")
+                else:
+                    desenhar_texto(f"PONTUAÇÃO FINAL: {pontos}", fonte_placar, LARGURA_TELA // 2,
+                                   int(ALTURA_TELA * 0.5), align="center")
 
             desenhar_texto("Clique para voltar ao menu", fonte_menu, LARGURA_TELA // 2, int(ALTURA_TELA * 0.22),
                            align="center")
@@ -772,9 +858,9 @@ def main():
                         coletor2_y = COLETOR_LIMITE_FUNDO
 
                 taxa_spawn = 0.03 # Medio
-                if nivel_dificuldade == "FACIL":
+                if nivel_dificuldade == "FÁCIL":
                     taxa_spawn = 0.02
-                elif nivel_dificuldade == "DIFICIL":
+                elif nivel_dificuldade == "DIFÍCIL":
                     taxa_spawn = 0.05
                 
                 if random.random() < taxa_spawn:
@@ -799,7 +885,6 @@ def main():
                         itens_para_remover.append(item)
                         if modo_de_jogo == "ZERAR":
                             pontos -= PONTOS_PERDIDOS_ZERAR
-                        
                         elif modo_de_jogo == "VIDAS":
                             vidas -= 1
                             print(f"Vida perdida! Vidas restantes: {vidas}")
@@ -825,7 +910,11 @@ def main():
                         high_scores = adicionar_pontuacao(high_scores, "DISPUTA", pontos)
                         high_scores = adicionar_pontuacao(high_scores, "DISPUTA", pontos_p2)
                     else:
-                        high_scores = adicionar_pontuacao(high_scores, modo_de_jogo, pontos)
+                        if modo_de_jogo == "ZERAR":
+                            score_final = int(tempo_atual_seg) 
+                            high_scores = adicionar_pontuacao(high_scores, "ZERAR", score_final)
+                        else:
+                            high_scores = adicionar_pontuacao(high_scores, modo_de_jogo, pontos) 
                     salvar_pontuacoes(high_scores)
 
             # RENDERIZACAO (JOGO E PAUSA)
@@ -833,7 +922,6 @@ def main():
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
 
-            # skybox
             glPushMatrix()
             glRotatef(camera_rot_x, 1.0, 0.0, 0.0)
             glRotatef(camera_rot_y, 0.0, 1.0, 0.0)
@@ -853,7 +941,6 @@ def main():
             for item in lista_itens:
                 item.draw(modelo_estrela)
 
-            # COLETOR P1 E LANTERNA
             glPushMatrix()
             glTranslatef(coletor_x, coletor_y, 0.0) 
             
@@ -895,7 +982,8 @@ def main():
                 desenhar_texto(f"Tempo: {tempo_restante}s", fonte_placar, LARGURA_TELA - 160, ALTURA_TELA - 40,
                                (255, 255, 255, 255))
             elif modo_de_jogo == "ZERAR":
-                desenhar_texto("Modo: Zerar", fonte_placar, LARGURA_TELA - 160, ALTURA_TELA - 40,
+                tempo_sobrevivido = int(tempo_a_mostrar)
+                desenhar_texto(f"Tempo: {tempo_sobrevivido}s", fonte_placar, LARGURA_TELA - 160, ALTURA_TELA - 40,
                                (255, 255, 255, 255))
             elif modo_de_jogo == "ENCHER":
                 desenhar_texto(f"Meta: {OBJETIVO_ENCHER_PONTOS}", fonte_placar, LARGURA_TELA - 160, ALTURA_TELA - 40,
@@ -904,7 +992,6 @@ def main():
                 desenhar_texto(f"Vidas: {vidas}", fonte_placar, LARGURA_TELA - 160, ALTURA_TELA - 40,
                                (255, 255, 255, 255))
             
-            # DESENHA O MENU DE PAUSA POR CIMA
             if game_state == ESTADO_PAUSA:
                 overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
                 overlay.fill((0, 0, 0, 150)) 
